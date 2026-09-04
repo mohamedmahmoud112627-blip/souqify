@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>سوقيفي - Souqify تسوق علي إكسبريس</title>
+  <style>
+    /* ===== إعدادات أساسية ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #f8fafc;
+      padding: 16px;
+      min-height: 100vh;
+      direction: rtl;
+    }
+    .container { max-width: 650px; margin: 0 auto; }
+
+    /* ===== الهيدر ===== */
+    .header {
+      text-align: center;
+      margin: 16px 0 24px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    .header h1 span { color: #e11d48; }
+    .header p { color: #64748b; font-size: 14px; margin-top: 4px; }
+
+    /* ===== صندوق البحث ===== */
+    .search-box {
+      background: white;
+      padding: 8px 8px 8px 4px;
+      border-radius: 60px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      transition: 0.2s;
+    }
+    .search-box:focus-within { border-color: #e11d48; box-shadow: 0 4px 16px rgba(225, 29, 72, 0.15); }
+    .search-box input {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      background: transparent;
+      color: #1e293b;
+    }
+    .search-box input::placeholder { color: #94a3b8; }
+    .search-box button {
+      background: #e11d48;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 40px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+    .search-box button:active { transform: scale(0.95); background: #be123c; }
+
+    /* ===== مؤشر التحميل ===== */
+    .loading-box {
+      text-align: center;
+      padding: 30px;
+      display: none;
+    }
+    .spinner {
+      border: 4px solid #f1f5f9;
+      border-top: 4px solid #e11d48;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ===== رسائل الخطأ ===== */
+    .error-box {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: none;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .error-box strong { display: block; font-size: 16px; margin-bottom: 4px; }
+    .error-box .details { 
+      background: rgba(0,0,0,0.05); 
+      padding: 8px; 
+      border-radius: 6px; 
+      margin-top: 8px; 
+      font-family: monospace; 
+      font-size: 12px;
+      word-break: break-all;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    /* ===== شبكة المنتجات ===== */
+    .products-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 6px;
+    }
+    @media (max-width: 420px) {
+      .products-grid { grid-template-columns: 1fr; } /* موبايلات صغيرة تظهر عمود واحد */
+    }
+
+    .product-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid #f1f5f9;
+      transition: 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .product-card:active { transform: scale(0.98); }
+
+    .product-card .img-wrap {
+      background: #f8fafc;
+      padding: 12px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .product-card .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: 0.3s;
+    }
+    .product-card .img-wrap img:not([src]), 
+    .product-card .img-wrap img[src=""] { display: none; }
+
+    .product-card .info {
+      padding: 12px 12px 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .product-card .info h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.4;
+      height: 36px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .product-card .info .price {
+      color: #e11d48;
+      font-weight: 700;
+      font-size: 16px;
+      margin: 6px 0 10px;
+    }
+    .product-card .info .buy-btn {
+      background: #f59e0b;
+      color: #0f172a;
+      text-align: center;
+      padding: 10px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      margin-top: auto;
+      transition: 0.2s;
+      border: none;
+    }
+    .product-card .info .buy-btn:active { background: #d97706; transform: scale(0.96); }
+
+    /* حالة عدم وجود نتائج */
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: #94a3b8;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>🛍️ <span>Souqify</span></h1>
+    <p>تسوق ملايين المنتجات من علي إكسبريس بأقل الأسعار</p>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="ابحث عن... هاتف، سماعة، ساعة" autofocus>
+    <button onclick="handleSearch()">🔍 بحث</button>
+  </div>
+
+  <div class="loading-box" id="loadingBox">
+    <div class="spinner"></div>
+    <p style="color: #475569; font-size: 14px;">جاري جلب المنتجات من علي إكسبريس...</p>
+  </div>
+
+  <div class="error-box" id="errorBox">
+    <strong>⚠️ حدث خطأ</strong>
+    <p id="errorMessage">تفاصيل الخطأ ستظهر هنا</p>
+    <div class="details" id="errorDetails"></div>
+  </div>
+
+  <div id="resultsContainer">
+    <div class="empty-state" id="initialEmpty">
+      <div class="icon">🔎</div>
+      <p>ابحث عن أي منتج وستظهر النتائج هنا</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== دالة البحث الرئيسية =====
+  async function handleSearch() {
+    const input = document.getElementById('searchInput');
+    const keyword = input.value.trim();
+    if (!keyword) {
+      alert('من فضلك اكتب اسم المنتج أولاً!');
+      return;
+    }
+
+    // إخفاء أي أخطاء سابقة
+    document.getElementById('errorBox').style.display = 'none';
+    document.getElementById('initialEmpty').style.display = 'none';
+    
+    // إظهار مؤشر التحميل
+    const loading = document.getElementById('loadingBox');
+    loading.style.display = 'block';
+    
+    const container = document.getElementById('resultsContainer');
+    // نمسح كل حاجة عدا عنصر loading (لو ضايله)
+    container.innerHTML = '';
+    container.appendChild(loading);
+
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword })
+      });
+
+      // قراءة الرد حتى لو مش JSON عشان نعرف الخطأ
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        // لو مش JSON، نعرض النص الخام
+        return showError('الخادم رجع رد مش مفهوم', responseText.substring(0, 200));
+      }
+
+      // لو فيه رسالة خطأ من السيرفر
+      if (data.error) {
+        return showError(data.error, data.details || data.fullResponse ? JSON.stringify(data.fullResponse, null, 2) : '');
+      }
+
+      // لو النتيجة مش مصفوفة
+      if (!Array.isArray(data)) {
+        return showError('البيانات الجاية مش مصفوفة منتجات', JSON.stringify(data, null, 2));
+      }
+
+      // ----- عرض المنتجات -----
+      loading.style.display = 'none';
+
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">😕</div>
+            <p>لا توجد منتجات مطابقة لـ "<strong>${keyword}</strong>"</p>
+            <p style="font-size:13px; margin-top:6px;">جرب كلمات بحث مختلفة</p>
+          </div>
+        `;
+        return;
+      }
+
+      // بناء بطاقات المنتجات
+      let html = '<div class="products-grid">';
+      data.forEach(p => {
+        // التأكد من وجود صورة (وضع صورة بديلة لو مش موجودة)
+        const imgSrc = p.image || 'https://via.placeholder.com/300x300/eeeeee/999999?text=No+Image';
+        const productLink = p.link || '#';
+        const productPrice = p.price || 'سعر غير محدد';
+        const productTitle = p.title || 'منتج بدون اسم';
+
+        html += `
+          <div class="product-card">
+            <div class="img-wrap">
+              <img src="${imgSrc}" alt="${productTitle}" loading="lazy" 
+                   onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300/eeeeee/999999?text=Image+Error';">
+            </div>
+            <div class="info">
+              <h3>${productTitle}</h3>
+              <div class="price">💰 ${productPrice}</div>
+              <a href="${productLink}" target="_blank" class="buy-btn" rel="nofollow sponsored">
+                🛒 شراء الآن
+              </a>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
+
+    } catch (networkError) {
+      loading.style.display = 'none';
+      showError('فشل الاتصال بالسيرفر', networkError.message || 'تأكد من اتصال الإنترنت');
+    }
+  }
+
+  // ===== دالة عرض الأخطاء بشكل جميل =====
+  function showError(msg, details = '') {
+    const box = document.getElementById('errorBox');
+    document.getElementById('errorMessage').innerText = msg;
+    const detailsDiv = document.getElementById('errorDetails');
+    if (details) {
+      detailsDiv.innerText = details;
+      detailsDiv.style.display = 'block';
+    } else {
+      detailsDiv.style.display = 'none';
+    }
+    box.style.display = 'block';
+    // نزيل مؤشر التحميل لو شغال
+    document.getElementById('loadingBox').style.display = 'none';
+  }
+
+  // ===== البحث بضغط زر Enter =====
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleSearch();
+  });
+
+  // ===== تنبيه للمستخدم لو نسي يحط مفتاح RapidAPI =====
+  window.onload = function() {
+    // مجرد تذكير ودي
+    console.log('✅ Souqify جاهز للبحث! تأكد من إضافة RAPID_KEY في Vercel Environment Variables.');
+  };
+</script>
+</body>
+</html>
