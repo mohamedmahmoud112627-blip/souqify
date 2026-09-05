@@ -1,90 +1,117 @@
+// ================================================================
+//  ملف: api/search.js
+//  الوظيفة: استقبال طلبات البحث، الاتصال بـ AliExpress True API
+//  الإصدار: 2.0 (مستقر وقوي)
+// ================================================================
+
+const RAPID_KEY = 'de78fc5088mshe96721e4e69af36p1f2daejsnd7cfda1a8d7f';
+const API_HOST = 'aliexpress-true-api.p.rapidapi.com';
+
 module.exports = async (req, res) => {
-  // 1. السماح لأي جهاز بالاتصال (CORS)
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  
-  // لو جالك طلب تجريبي (OPTIONS) خلصه على طول
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'طريقة غير مسموحة، استخدم POST' });
+    return res.status(405).json({ success: false, error: 'استخدم POST فقط' });
   }
 
   try {
-    const { keyword } = req.body;
-    if (!keyword || keyword.trim() === '') {
-      return res.status(400).json({ error: 'من فضلك اكتب اسم المنتج' });
-    }
+    const { keyword, productId } = req.body;
+    const hasKeyword = keyword && keyword.trim() !== '';
+    const hasProductId = productId && productId.trim() !== '';
 
-    // جلب المفتاح السري من بيئة Vercel
-    const RAPID_KEY = process.env.RAPID_KEY;
-    if (!RAPID_KEY) {
-      return res.status(500).json({ error: 'مفتاح RapidAPI مش موجود في إعدادات Vercel (Environment Variables)' });
-    }
-
-    // طلب البحث من علي إكسبريس
-    const response = await fetch(
-      `https://ali-express-api1.p.rapidapi.com/search?query=${encodeURIComponent(keyword)}&page=1`,
-      {
-        headers: {
-          'X-RapidAPI-Key': RAPID_KEY,
-          'X-RapidAPI-Host': 'ali-express-api1.p.rapidapi.com'
-        }
-      }
-    );
-
-    // لو الـ API رجع بحالة مش 200
-    if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ 
-        error: `الـ API رجع خطأ (${response.status})`, 
-        details: errorText 
+    if (!hasKeyword && !hasProductId) {
+      return res.status(400).json({
+        success: false,
+        error: 'أرسل كلمة بحث (keyword) أو معرف منتج (productId)'
       });
     }
 
-    const data = await response.json();
+    let apiUrl = '';
+    let requestType = '';
 
-    // ===== هنا الجزء المهم: المرونة في قراءة البيانات (عشان لو شكلها اختلف) =====
-    let productsArray = [];
-    
-    // في الغالب البيانات بتكون جوا result، لكن بنفحص كل الاحتمالات
-    if (data?.data?.result) {
-      productsArray = data.data.result;
-    } else if (data?.result) {
-      productsArray = data.result;
-    } else if (Array.isArray(data)) {
-      productsArray = data;
-    } else if (data?.products) {
-      productsArray = data.products;
+    if (hasProductId) {
+      requestType = 'product';
+      apiUrl = `https://${API_HOST}/product?productId=${encodeURIComponent(productId.trim())}`;
     } else {
-      // لو مش لاقي المنتجات، نرجع تفاصيل الرد عشان تعرف إنت شكل البيانات إيه
-      return res.status(200).json({ 
-        error: 'الـ API رجع بيانات لكن مش بالشكل المتوقع',
-        fullResponse: data // هيعرضلك أول 100 حرف من الرد عشان تشوف بنفسك
+      requestType = 'search';
+      apiUrl = `https://${API_HOST}/search?query=${encodeURIComponent(keyword.trim())}&page=1&categoryId=0`;
+    }
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'X-RapidAPI-Key': RAPID_KEY,
+        'X-RapidAPI-Host': API_HOST
+      },
+      signal: AbortSignal.timeout(15000)
+    });
+
+    if (!response.ok) {
+      let errorText = '';
+      try { errorText = await response.text(); } catch (_) {}
+      return res.status(response.status).json({
+        success: false,
+        error: `فشل الاتصال بـ AliExpress (${response.status})`,
+        details: errorText.substring(0, 300)
       });
     }
 
-    // لو مفيش منتجات خالص
-    if (!productsArray || productsArray.length === 0) {
-      return res.status(200).json([]); // رجع مصفوفة فاضية
+    let data;
+    try { data = await response.json(); } catch (_) {
+      return res.status(500).json({
+        success: false,
+        error: 'الـ API رجع بيانات غير مفهومة'
+      });
     }
 
-    // تهيئة المنتجات بالشكل النهائي (مع رابط العمولة)
-    // استبدل "YOUR_AFFILIATE_ID" بكود التتبع بتاعك من علي إكسبريس
-    const products = productsArray.map(item => ({
-      id: item.productId || item.id || Math.random().toString(36),
-      title: item.title || item.productTitle || 'منتج بدون اسم',
-      price: item.price ? `${item.price} دولار` : 'السعر غير متاح',
-      image: item.imageUrl || item.image || item.productImage || 'https://via.placeholder.com/300x300?text=No+Image',
-      link: `https://s.click.aliexpress.com/e/_YOUR_AFFILIATE_ID?productId=${item.productId || item.id || ''}`
-    }));
+    let productsArray = [];
+    if (data?.data?.result) productsArray = data.data.result;
+    else if (data?.result) productsArray = data.result;
+    else if (data?.data?.products) productsArray = data.data.products;
+    else if (data?.products) productsArray = data.products;
+    else if (Array.isArray(data)) productsArray = data;
+    else if (data?.data && Array.isArray(data.data)) productsArray = data.data;
 
-    res.status(200).json(products);
+    if (requestType === 'product' && (!productsArray || productsArray.length === 0)) {
+      if (data?.data && typeof data.data === 'object') productsArray = [data.data];
+      else if (data?.result && typeof data.result === 'object') productsArray = [data.result];
+      else if (data && typeof data === 'object' && data.productId) productsArray = [data];
+    }
+
+    if (!productsArray || productsArray.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // ★★★ غيّر "YOUR_ALIEXPRESS_AFFILIATE_ID" إلى كود التتبع بتاعك ★★★
+    const affiliateId = 'YOUR_ALIEXPRESS_AFFILIATE_ID';
+
+    const products = productsArray
+      .filter(item => item !== null && typeof item === 'object')
+      .map((item) => ({
+        id: item.productId || item.id || item.product_id || Math.random().toString(36).substring(2, 10),
+        title: item.title || item.productTitle || item.product_title || 'منتج بدون اسم',
+        price: item.price || item.salePrice || item.originalPrice || 'السعر غير متاح',
+        image: item.imageUrl || item.image || item.productImage || item.mainImage || 'https://via.placeholder.com/300x300/eeeeee/cccccc?text=No+Image',
+        link: `https://s.click.aliexpress.com/e/${affiliateId}?productId=${item.productId || item.id || ''}`
+      }));
+
+    return res.status(200).json(products);
 
   } catch (error) {
-    // أي خطأ طارئ في الكود نفسه
-    res.status(500).json({ 
-      error: 'حصل عطل في سيرفر البحث',
-      details: error.message || 'خطأ غير معروف'
+    console.error('🔥 خطأ في سيرفر Souqify:', error.message);
+    let errorMessage = 'حدث خطأ داخلي في السيرفر';
+    let errorDetails = error.message || 'خطأ غير معروف';
+    if (error.name === 'AbortError') {
+      errorMessage = 'انتهت مهلة الاتصال بـ AliExpress';
+      errorDetails = 'الخادم لم يستجب خلال 15 ثانية، حاول مجدداً';
+    }
+    return res.status(500).json({
+      success: false,
+      error: errorMessage,
+      details: errorDetails
     });
   }
-};;
+};
