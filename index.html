@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>متجر التوفير - Souqify</title>
+</head>
+<body style="font-family: Tahoma; text-align: center; padding: 50px;">
+    <h2>متجر التوفير 🛍️</h2>
+    <input type="text" id="query" placeholder="ابحث عن منتج..." style="padding: 10px; width: 250px;">
+    <button onclick="searchProduct()" style="padding: 10px;">بحث</button>
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script>
+        async function searchProduct() {
+            const q = document.getElementById('query').value;
+            document.getElementById('results').innerHTML = '⏳ جاري البحث...';
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if(data.success && data.products.length > 0) {
+                    let html = '';
+                    data.products.forEach(p => {
+                        html += `<div style="border:1px solid #ccc; padding:10px; margin:10px auto; width:300px;">
+                            <h3>${p.title}</h3>
+                            <p>السعر: ${p.price}</p>
+                            <a href="${p.link}" target="_blank">رابط المنتج</a>
+                        </div>`;
+                    });
+                    document.getElementById('results').innerHTML = html;
+                } else {
+                    document.getElementById('results').innerHTML = 'عذراً، لم نجد منتجات.';
+                }
+            } catch(e) {
+                document.getElementById('results').innerHTML = 'حدث خطأ في الاتصال.';
+            }
+        }
+    </script>
+</body>
+</html
