@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     }
 
     // ★★★ غيّر "YOUR_ALIEXPRESS_AFFILIATE_ID" إلى كود التتبع بتاعك ★★★
-    const affiliateId = 'YOUR_ALIEXPRESS_AFFILIATE_ID';
+    const affiliateId = de78fc5088mshe96721e4e69af36p1f2daejsnd7cfda1a8d7f
 
     const products = productsArray
       .filter(item => item !== null && typeof item === 'object')
