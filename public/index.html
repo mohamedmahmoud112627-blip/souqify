@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>🛍️ Souqify - تسوق ذكي من علي إكسبريس</title>
+  <!-- خطوط جميلة من Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ========== الأساسيات ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      padding: 16px 12px 40px;
+    }
+
+    /* الحاوية الرئيسية */
+    .app-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ========== الهيدر ========== */
+    .header {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      padding: 28px 20px 24px;
+      border-radius: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(225, 29, 72, 0.15), transparent 70%);
+      border-radius: 50%;
+    }
+
+    .header h1 {
+      color: white;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header h1 span {
+      background: linear-gradient(135deg, #f59e0b, #e11d48);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header .badge {
+      display: inline-block;
+      background: rgba(225, 29, 72, 0.2);
+      color: #fecaca;
+      font-size: 11px;
+      padding: 4px 14px;
+      border-radius: 30px;
+      margin-top: 10px;
+      border: 1px solid rgba(225, 29, 72, 0.3);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ========== شريط البحث ========== */
+    .search-wrapper {
+      background: white;
+      border-radius: 60px;
+      padding: 6px 6px 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      border: 2px solid transparent;
+      transition: 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    .search-wrapper:focus-within {
+      border-color: #e11d48;
+      box-shadow: 0 4px 24px rgba(225, 29, 72, 0.15);
+    }
+
+    .search-wrapper input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 14px 6px;
+      font-size: 16px;
+      font-family: 'Tajawal', sans-serif;
+      background: transparent;
+      color: #1e293b;
+    }
+
+    .search-wrapper input::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .search-wrapper button {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 40px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Tajawal', sans-serif;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .search-wrapper button:active {
+      transform: scale(0.94);
+    }
+
+    /* ========== مؤشر التحميل ========== */
+    .loading-state {
+      text-align: center;
+      padding: 40px 0;
+      display: none;
+    }
+
+    .loading-state .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #e11d48;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-state p {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    /* ========== رسالة الخطأ ========== */
+    .error-toast {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 16px 18px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      display: none;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .error-toast strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .error-toast .detail {
+      background: rgba(0, 0, 0, 0.04);
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      word-break: break-all;
+      max-height: 120px;
+      overflow: auto;
+    }
+
+    /* ========== شبكة المنتجات ========== */
+    .products-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 420px) {
+      .products-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ========== بطاقة المنتج ========== */
+    .product-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      border: 1px solid #f1f5f9;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .product-card:active {
+      transform: scale(0.97);
+    }
+
+    /* خصم وهمي */
+    .product-card .discount-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, #e11d48, #f59e0b);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 30px;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3);
+    }
+
+    .product-card .img-wrap {
+      background: #f8fafc;
+      padding: 16px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .product-card .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: 0.3s;
+    }
+
+    .product-card .img-wrap img:not([src]),
+    .product-card .img-wrap img[src=""] {
+      display: none;
+    }
+
+    .product-card .info {
+      padding: 14px 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card .info .title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.4;
+      height: 38px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* تقييم نجوم وهمي */
+    .product-card .info .stars {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin: 6px 0 2px;
+      font-size: 13px;
+      color: #f59e0b;
+      letter-spacing: 1px;
+    }
+
+    .product-card .info .stars span {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-right: 4px;
+    }
+
+    .product-card .info .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin: 4px 0 10px;
+    }
+
+    .product-card .info .price-row .current {
+      color: #e11d48;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .product-card .info .price-row .old {
+      color: #94a3b8;
+      font-size: 13px;
+      text-decoration: line-through;
+    }
+
+    .product-card .info .buy-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
+      text-align: center;
+      padding: 12px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      margin-top: auto;
+      transition: 0.2s;
+      border: none;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+    }
+
+    .product-card .info .buy-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* ========== الحالة الفارغة ========== */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+    }
+
+    .empty-state .icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state h3 {
+      color: #1e293b;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    /* ========== تذييل ========== */
+    .footer-note {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 12px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 20px;
+    }
+
+    .footer-note a {
+      color: #e11d48;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ===== الهيدر ===== -->
+    <header class="header">
+      <h1>🛍️ <span>Souqify</span></h1>
+      <p>اكتشف أفضل العروض من علي إكسبريس</p>
+      <span class="badge">⭐ أكثر من 10,000 منتج</span>
+    </header>
+
+    <!-- ===== شريط البحث ===== -->
+    <div class="search-wrapper">
+      <input type="text" id="searchInput" placeholder="ابحث عن هاتف، سماعة، ساعة..." autofocus />
+      <button onclick="handleSearch()">🔍 بحث</button>
+    </div>
+
+    <!-- ===== مؤشر التحميل ===== -->
+    <div class="loading-state" id="loadingBox">
+      <div class="spinner"></div>
+      <p>جاري جلب المنتجات من علي إكسبريس...</p>
+    </div>
+
+    <!-- ===== رسالة الخطأ ===== -->
+    <div class="error-toast" id="errorBox">
+      <strong>⚠️ حدث خطأ</strong>
+      <p id="errorMessage"></p>
+      <div class="detail" id="errorDetail"></div>
+    </div>
+
+    <!-- ===== حاوية النتائج ===== -->
+    <div id="resultsContainer">
+      <div class="empty-state" id="initialEmpty">
+        <div class="icon">🔎</div>
+        <h3>ابحث عن منتجك</h3>
+        <p>جرب تبحث عن "سماعة" أو "ساعة" أو "هاتف"</p>
+      </div>
+    </div>
+
+    <!-- ===== تذييل ===== -->
+    <div class="footer-note">
+      🛒 Souqify © 2026 · روابط عمولة · تسوق بأمان
+    </div>
+  </div>
+
+  <script>
+    // ===========================================================
+    //  جافا سكريبت البحث (نفس المنطق السابق مع تحسينات)
+    // ===========================================================
+
+    async function handleSearch() {
+      const input = document.getElementById('searchInput');
+      const query = input.value.trim();
+
+      if (!query) {
+        alert('✋ من فضلك اكتب اسم المنتج');
+        return;
+      }
+
+      // إخفاء الأخطاء القديمة
+      document.getElementById('errorBox').style.display = 'none';
+      document.getElementById('initialEmpty').style.display = 'none';
+
+      const loading = document.getElementById('loadingBox');
+      loading.style.display = 'block';
+
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '';
+      container.appendChild(loading);
+
+      // هل المستخدم كتب أرقام فقط؟ => productId
+      const isNumeric = /^\d+$/.test(query);
+      const payload = isNumeric ? { productId: query } : { keyword: query };
+
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (_) {
+          return showError('الخادم رد برد غير مفهوم', text.substring(0, 200));
+        }
+
+        if (data.error) {
+          return showError(data.error, data.details || data.solution || '');
+        }
+
+        if (!Array.isArray(data)) {
+          return showError('البيانات غير صالحة', JSON.stringify(data, null, 2));
+        }
+
+        loading.style.display = 'none';
+
+        if (data.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">😕</div>
+              <h3>لا توجد نتائج</h3>
+              <p>لا يوجد منتجات تطابق "<strong>${query}</strong>"</p>
+              <p style="font-size:13px; margin-top:6px; color:#94a3b8;">جرب كلمات بحث مختلفة</p>
+            </div>
+          `;
+          return;
+        }
+
+        // بناء البطاقات
+        let html = '<div class="products-grid">';
+        data.forEach((p, index) => {
+          const img = p.image || 'https://via.placeholder.com/300x300/eeeeee/999999?text=No+Image';
+          const title = p.title || 'منتج بدون اسم';
+          const price = p.price || 'سعر غير متاح';
+          const link = p.link || '#';
+
+          // خصم وهمي يظهر بشكل عشوائي
+          const discount = Math.floor(Math.random() * 30) + 5;
+          const showDiscount = index % 2 === 0; // نص المنتجات عليها خصم
+
+          // نجوم وهمية
+          const stars = '⭐'.repeat(Math.floor(Math.random() * 2) + 3);
+
+          html += `
+            <div class="product-card">
+              ${showDiscount ? `<div class="discount-tag">-${discount}%</div>` : ''}
+              <div class="img-wrap">
+                <img src="${img}" alt="${title}" loading="lazy"
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300/eeeeee/999999?text=Image+Error';" />
+              </div>
+              <div class="info">
+                <div class="title">${title}</div>
+                <div class="stars">${stars} <span>(${Math.floor(Math.random() * 500) + 10})</span></div>
+                <div class="price-row">
+                  <span class="current">💰 ${price}</span>
+                  ${showDiscount ? `<span class="old">${Math.round(parseFloat(price) * 1.3)} دولار</span>` : ''}
+                </div>
+                <a href="${link}" target="_blank" rel="nofollow sponsored" class="buy-btn">
+                  🛒 شراء الآن
+                </a>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+
+      } catch (err) {
+        loading.style.display = 'none';
+        showError('فشل الاتصال بالسيرفر', err.message || 'تأكد من اتصال الإنترنت');
+      }
+    }
+
+    // ===== دالة عرض الأخطاء =====
+    function showError(msg, detail = '') {
+      const box = document.getElementById('errorBox');
+      document.getElementById('errorMessage').textContent = msg;
+      const detailEl = document.getElementById('errorDetail');
+      if (detail) {
+        detailEl.textContent = detail;
+        detailEl.style.display = 'block';
+      } else {
+        detailEl.style.display = 'none';
+      }
+      box.style.display = 'block';
+      document.getElementById('loadingBox').style.display = 'none';
+    }
+
+    // ===== البحث بضغط Enter =====
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSearch();
+    });
+
+    // ===== رسالة ترحيب في Console =====
+    console.log('✅ Souqify Pro جاهز! 🚀');
+  </script>
+
+</body>
+</html>
